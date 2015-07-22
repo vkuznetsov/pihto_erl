@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Save pics</title>
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+  </head>
+  <body>
+    <nav class="navbar navbar-default">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <div class="navbar-brand">Small cats</div>
+        </div>
+        <div class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a id="switch-prev" class="glyphicon glyphicon-chevron-left" href="#"></a></li>
+            <li><a id="switcher"></a></li>
+            <li><a id="switch-next" class="glyphicon glyphicon-chevron-right" href="#"></a></li>
+          </ul>
+          <form class="navbar-form navbar-right" action="#">
+            <div class="form-group">
+              <input class="form-control" type="text">
+            </div>
+            <button class="btn">Search</button>
+          </form>
+        </div>
+      </div>
+    </nav>
+    <div class="container-fluid">
+      <div class="row">
+        <!--div class="col-lg-3">
+          <ul class="list-group">
+            <li class="list-group-item">
+              <span class="glyphicon glyphicon-tag"></span> Abracadabrawababraweweiuhwiuhtuirhtiurhtiu <span class="badge">224</span>
+            </li>
+            <li class="list-group-item active">
+              <span class="glyphicon glyphicon-tag"></span> Small cats <span class="badge">245</span>
+            </li>
+            <li class="list-group-item">
+              <span class="glyphicon glyphicon-tag"></span> Funny dogs <span class="badge">322</span>
+            </li>
+            <li class="list-group-item">
+              <span class="glyphicon glyphicon-tag"></span> Big boobs <span class="badge">157</span>
+            </li>
+            <li class="list-group-item">
+              <span class="glyphicon glyphicon-tag"></span> WTF?? <span class="badge">184</span>
+            </li>
+            <li class="list-group-item">
+              <span class="glyphicon glyphicon-tag"></span> Logo <span class="badge">28</span>
+            </li>
+          </ul>
+        </div-->
+        <div class="col-lg-12">
+          <div class="panel panel-default">
+            <div class="panel-body">
+              <div class="media">
+                <div class="media-top">
+                  <a id="image_link" target="blank">
+                    <img id="image" alt="image">
+                  </a>
+                </div>
+              </div>
+            </div>
+            <div class="panel-footer">
+              <h4 id="title"></h4>
+              <i>Origin</i>:&nbsp;<a id="origin"></a>
+              <br>
+              <i>Tags</i>:&nbsp<span id="tags"></span>
+              <br>
+              <i>Added at</i>:&nbsp;<span id="added_at"></span>
+              <br>
+              <i>Comment</i>:&nbsp;<span id="comment"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/images.js"></script>
+    <script>
+      $(function () {
+        $('[data-toggle="popover"]').popover()
+      })
+    </script>
+</body>
+</html>
