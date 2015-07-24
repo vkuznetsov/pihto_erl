@@ -18,7 +18,7 @@ var menuItem = contextMenu.Item({
   onMessage: function (data) {
     console.log(data);
     Request({
-      url: "http://localhost:8080/save",
+      url: "http://localhost:8080/images",
       content: data,
       onComplete: function (response) {
         console.log("Saved: " + data.url);

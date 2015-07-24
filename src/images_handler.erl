@@ -1,26 +1,50 @@
 -module(images_handler).
--behaviour(cowboy_http_handler).
 
--export([init/3, handle/2, terminate/3]).
+-export([
+  init/3,
+  allowed_methods/2,
+  content_types_provided/2,
+  content_types_accepted/2
+]).
 
--record(state, {
-}).
+-export([
+  get_image/2,
+  save_image/2
+]).
 
-init(_, Req, _Opts) ->
-  {ok, Req, #state{}}.
+init(_Transport, _Req, _Opts) ->
+  random:seed(now()),
+  {upgrade, protocol, cowboy_rest}.
 
-handle(Req, State=#state{}) ->
-  {ok, Req2} = cowboy_req:reply(
-                 200,
-                 [{<<"content-type">>, <<"application/json">>}],
-                 read_json(),
-                 Req
-                ),
-  {ok, Req2, State}.
+allowed_methods(Req, State) ->
+  {[<<"GET">>, <<"POST">>], Req, State}.
 
-terminate(_Reason, _Req, _State) ->
-  ok.
+content_types_provided(Req, State) ->
+  {
+    [{{<<"application">>, <<"json">>, []}, get_image}],
+    Req, State
+  }.
 
-read_json() ->
-  {ok, File} = file:read_file(filename:join(code:priv_dir(webserver), "images.json")),
-  File.
+content_types_accepted(Req, State) ->
+  {
+    [{{<<"application">>, <<"x-www-form-urlencoded">>, []}, save_image}],
+    Req, State
+  }.
+
+get_image(Req, State) ->
+  case cowboy_req:binding(image_id, Req) of
+    {undefined, Req1} ->
+      images:search(""),
+      {true, Req1, State};
+    {ImageId, Req1} ->
+      images:get(ImageId),
+      {true, Req1, State};
+    _ ->
+      {false, Req, State}
+  end.
+
+save_image(Req, State) ->
+  {ok, Data, Req1} = cowboy_req:body(Req),
+  {ImageId, Req2} = cowboy_req:binding(image_id, Req1),
+  images:save(ImageId, Data),
+  {true, Req2, State}.
