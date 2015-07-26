@@ -24,7 +24,7 @@ terminate(_Reason, _State) ->
 
 handle_call({search, Tag}, _From, Riak) ->
   ImageIds = fetch_image_ids(Riak, Tag),
-  Images = [{ImageId, fetch_image(Riak, ImageId)} || ImageId <- ImageIds],
+  Images = [fetch_image(Riak, ImageId) || ImageId <- ImageIds],
   {reply, Images, Riak};
 
 handle_call({get, ImageId}, _From, Riak) ->
@@ -51,33 +51,52 @@ fetch_image_ids(Riak, Tag) ->
   end.
 
 fetch_image(Riak, ImageId) ->
-  case riakc_pb_socket:get(Riak, <<"images">>, ImageId) of
-    {ok, Fetched} -> riakc_obj:get_value(Fetched);
-    {error, notfound} -> notfound
+  case riakc_pb_socket:fetch_type(Riak, {<<"images">>, <<"images">>}, ImageId) of
+    {ok, {map, Image, _, _, _}} -> [{Key, Value} || {{Key, _}, Value} <- Image];
+    {error, {notfound, map}} -> notfound
   end.
 
-update_image(Riak, ImageId, Data, Tags) ->
-  Obj = riakc_obj:new(<<"images">>, ImageId, Data),
-  ok = riakc_pb_socket:put(Riak, Obj),
+update_image(Riak, ImageId, Props, Tags) ->
+  riakc_pb_socket:modify_type(Riak,
+    fun(Map) ->
+      Map1 = update_image_tags(ImageId, Map, Tags, Riak),
+      update_image_fields(Map1, Props)
+    end,
+    {<<"images">>, <<"images">>},
+    ImageId,
+    [create]
+  ).
 
-  case riakc_pb_socket:fetch_type(Riak, {<<"tags">>, <<"image_tags">>}, ImageId) of
-    {ok, ImageTagsSet} ->
-      {set, CurrentTags, _, _, _} = ImageTagsSet,
+update_image_tags(ImageId, ImageMap, Tags, Riak) ->
+  riakc_map:update(
+    {<<"tags">>, set},
+    fun(TagsSet) ->
+      CurrentTags = riakc_set:value(TagsSet),
+      NewTags = lists:subtract(Tags, CurrentTags),
       ExtraTags = lists:subtract(CurrentTags, Tags),
-      NewTags = lists:subtract(Tags, CurrentTags);
-    {error, {notfound, set}} ->
-      ImageTagsSet = riakc_set:new(),
-      ExtraTags = [],
-      NewTags = Tags
-  end,
 
-  ImageTagsSet1 = del_image_tags_from_set(ExtraTags, ImageTagsSet),
-  ImageTagsSet2 = add_image_tags_to_set(NewTags, ImageTagsSet1),
-  riakc_pb_socket:update_type(Riak, {<<"tags">>, <<"image_tags">>}, ImageId, riakc_set:to_op(ImageTagsSet2)),
+      ok = add_image_to_tags(ImageId, NewTags, Riak),
+      ok = del_image_from_tags(ImageId, ExtraTags, Riak),
 
-  ok = add_image_to_tags(ImageId, NewTags, Riak),
-  ok = del_image_from_tags(ImageId, ExtraTags, Riak).
+      TagsSet1 = add_image_tags_to_set(NewTags, TagsSet),
+      del_image_tags_from_set(ExtraTags, TagsSet1)
 
+    end,
+    ImageMap
+  ).
+
+update_image_fields(ImageMap, Props) ->
+  lists:foldl(
+    fun({Key, Value}, Map) ->
+      riakc_map:update(
+        {Key, register},
+        fun(Reg) -> riakc_register:set(Value, Reg) end,
+        Map
+      )
+    end,
+    ImageMap,
+    Props
+  ).
 
 add_image_to_tags(_ImageId, [], _Riak) -> ok;
 add_image_to_tags(ImageId, [Tag | Tags], Riak) ->

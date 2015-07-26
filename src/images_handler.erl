@@ -34,17 +34,38 @@ content_types_accepted(Req, State) ->
 get_image(Req, State) ->
   case cowboy_req:binding(image_id, Req) of
     {undefined, Req1} ->
-      images:search(""),
-      {true, Req1, State};
+      {Tag, Req2} = cowboy_req:qs_val(<<"tag">>, Req1),
+      Images = images:search(Tag),
+      JSON = jsx:encode(Images),
+      {JSON, Req2, State};
     {ImageId, Req1} ->
-      images:get(ImageId),
-      {true, Req1, State};
-    _ ->
-      {false, Req, State}
+      Image = images:get(ImageId),
+      JSON = jsx:encode(Image),
+      {JSON, Req1, State}
   end.
 
 save_image(Req, State) ->
-  {ok, Data, Req1} = cowboy_req:body(Req),
-  {ImageId, Req2} = cowboy_req:binding(image_id, Req1),
-  images:save(ImageId, Data),
-  {true, Req2, State}.
+  {ok, Data, Req1} = cowboy_req:body_qs(Req),
+
+  ImageId = list_to_binary(md5:md5_hex(proplists:get_value(<<"url">>, Data))),
+
+  Tags = case proplists:get_value(<<"tags">>, Data) of
+           undefined -> [];
+           T -> T
+         end,
+
+  AllowedKeys = [<<"url">>, <<"origin">>, <<"title">>, <<"comment">>, <<"width">>, <<"height">>],
+
+  FilteredParams = lists:foldl(
+    fun(Key, NewList) ->
+      case proplists:get_value(Key, Data) of
+        undefined -> NewList;
+        Value -> [{Key, Value} | NewList]
+      end
+    end,
+    [{<<"uid">>, ImageId}],
+    AllowedKeys
+  ),
+
+  images:save(ImageId, FilteredParams, Tags),
+  {true, Req1, State}.
