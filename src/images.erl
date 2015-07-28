@@ -2,7 +2,7 @@
 -behaviour(gen_server).
 
 -export([start_link/0, init/1, terminate/2, handle_call/3, handle_cast/2, handle_info/2, code_change/3]).
--export([search/1, get/1, save/3]).
+-export([search/1, get/1, save/3, delete/1]).
 
 search(Tag) ->
   gen_server:call(?MODULE, {search, Tag}).
@@ -12,6 +12,9 @@ get(ImageId) ->
 
 save(ImageId, Data, Tags) ->
   gen_server:call(?MODULE, {save, ImageId, Data, Tags}).
+
+delete(ImageId) ->
+  gen_server:call(?MODULE, {delete, ImageId}).
 
 start_link() ->
   gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
@@ -33,6 +36,10 @@ handle_call({get, ImageId}, _From, Riak) ->
 
 handle_call({save, ImageId, Data, Tags}, _From, Riak) ->
   update_image(Riak, ImageId, Data, Tags),
+  {reply, ok, Riak};
+
+handle_call({delete, ImageId}, _From, Riak) ->
+  delete_image(Riak, ImageId),
   {reply, ok, Riak}.
 
 handle_cast(_Message, State) ->
@@ -124,3 +131,11 @@ del_image_tags_from_set([Tag | Tags], RiakSet) ->
   RiakSet1 = riakc_set:del_element(Tag, RiakSet),
   del_image_tags_from_set(Tags, RiakSet1).
 
+delete_image(Riak, ImageId) ->
+  case fetch_image(Riak, ImageId) of
+    notfound -> notfound;
+    Image ->
+      Tags = proplists:get_value(<<"tags">>, Image),
+      del_image_from_tags(ImageId, Tags, Riak),
+      riakc_pb_socket:delete(Riak, {<<"images">>, <<"images">>}, ImageId)
+  end.

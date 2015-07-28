@@ -1,13 +1,15 @@
 var images_collection, image_index;
 
-function load() {
-  $.getJSON("/1234/", function(data) {
+function load(tag) {
+  $.getJSON("/images?tag=" + tag, function(data) {
     images_collection = data;
     image_index = 0;
 
     show();
     update_switcher();
   });
+
+  $("#page_title").html(tag);
 }
 
 function next() {
@@ -80,10 +82,14 @@ $(document).ready(function() {
         next();
     });
 
-    load();
+    load("notag");
 });
 
 $(document).keydown(function(e) {
     if (e.which == 37) prev();
     else if (e.which == 39) next();
 })
+
+$("#btn_search").click(function() {
+    load($("#query").val());
+});

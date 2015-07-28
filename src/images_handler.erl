@@ -4,7 +4,8 @@
   init/3,
   allowed_methods/2,
   content_types_provided/2,
-  content_types_accepted/2
+  content_types_accepted/2,
+  delete_resource/2
 ]).
 
 -export([
@@ -17,7 +18,7 @@ init(_Transport, _Req, _Opts) ->
   {upgrade, protocol, cowboy_rest}.
 
 allowed_methods(Req, State) ->
-  {[<<"GET">>, <<"POST">>], Req, State}.
+  {[<<"GET">>, <<"POST">>, <<"DELETE">>], Req, State}.
 
 content_types_provided(Req, State) ->
   {
@@ -27,9 +28,19 @@ content_types_provided(Req, State) ->
 
 content_types_accepted(Req, State) ->
   {
-    [{{<<"application">>, <<"x-www-form-urlencoded">>, []}, save_image}],
+    [{{<<"application">>, <<"x-www-form-urlencoded">>, '*'}, save_image}],
     Req, State
   }.
+
+delete_resource(Req, State) ->
+  case cowboy_req:binding(image_id, Req) of
+    {undefined, Req1} ->
+      {ok, Req2} = cowboy_req:reply(400, Req1),
+      {halt, Req2, State};
+    {ImageId, Req1} ->
+      images:delete(ImageId),
+      {true, Req1, State}
+  end.
 
 get_image(Req, State) ->
   case cowboy_req:binding(image_id, Req) of
@@ -49,12 +60,12 @@ save_image(Req, State) ->
 
   ImageId = list_to_binary(md5:md5_hex(proplists:get_value(<<"url">>, Data))),
 
-  Tags = case proplists:get_value(<<"tags">>, Data) of
-           undefined -> [];
+  Tags = case get_tags(Data) of
+           [] -> [<<"notag">>];
            T -> T
          end,
 
-  AllowedKeys = [<<"url">>, <<"origin">>, <<"title">>, <<"comment">>, <<"width">>, <<"height">>],
+  AllowedKeys = [<<"url">>, <<"origin">>, <<"title">>, <<"comment">>, <<"added_at">>, <<"width">>, <<"height">>],
 
   FilteredParams = lists:foldl(
     fun(Key, NewList) ->
@@ -68,4 +79,13 @@ save_image(Req, State) ->
   ),
 
   images:save(ImageId, FilteredParams, Tags),
+  io:format("Saved: ~p Tags: ~p~n", [FilteredParams, Tags]),
   {true, Req1, State}.
+
+get_tags(Data) -> get_tags(Data, 0, []).
+get_tags(Data, Num, Tags) ->
+  ParamName = list_to_binary(io_lib:format("tags[~b]", [Num])),
+  case proplists:get_value(ParamName, Data) of
+    undefined -> Tags;
+    Tag -> get_tags(Data, Num + 1, [Tag | Tags])
+  end.

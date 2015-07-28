@@ -1,6 +1,30 @@
 var contextMenu = require("sdk/context-menu");
 var Request = require("sdk/request").Request;
 var URL = require("sdk/url").URL;
+var data = require("sdk/self").data;
+
+var form = require("sdk/panel").Panel({
+  contentURL: data.url("form.html"),
+  contentScriptFile: data.url("form.js")
+});
+
+form.on("show", function() {
+  form.port.emit("show");
+});
+
+form.port.on("save", function(image_data) {
+  Request({
+    url: "http://localhost:8080/images",
+    content: image_data,
+    contentType: "application/x-www-form-urlencoded",
+    onComplete: function (response) {
+      console.log("Saved: " + image_data.url + "\nResponse: " + response.status);
+
+      if (response.status == 200 || response.status == 204) form.hide();
+      else form.port.emit("error", "Application Error " + response.status);
+    }
+  }).post();
+});
 
 var menuItem = contextMenu.Item({
   label: "Save image to addpic",
@@ -12,17 +36,13 @@ var menuItem = contextMenu.Item({
                  '    "comment": "",' +
                  '    "origin": document.URL,' +
                  '    "width": image.naturalWidth,' +
-                 '    "height": image.naturalHeight' +
+                 '    "height": image.naturalHeight,' +
+                 '    "added_at": new Date().toString()' +
                  '  });' +
                  '});',
-  onMessage: function (data) {
-    console.log(data);
-    Request({
-      url: "http://localhost:8080/images",
-      content: data,
-      onComplete: function (response) {
-        console.log("Saved: " + data.url);
-      }
-    }).post();
+  onMessage: function (image_data) {
+    form.show();
+
+    form.port.emit("load", image_data);
   }
 });
