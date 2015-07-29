@@ -16,6 +16,7 @@ start(_StartType, _StartArgs) ->
       {"/js/[...]", cowboy_static, {priv_dir, webserver, "js"}},
       {"/css/[...]", cowboy_static, {priv_dir, webserver, "css"}},
       {"/fonts/[...]", cowboy_static, {priv_dir, webserver, "fonts"}},
+      {"/img/[...]", cowboy_static, {priv_dir, webserver, "img"}},
       {"/images/[:image_id]", images_handler, []}
     ]}
   ]),

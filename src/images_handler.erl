@@ -82,10 +82,21 @@ save_image(Req, State) ->
   io:format("Saved: ~p Tags: ~p~n", [FilteredParams, Tags]),
   {true, Req1, State}.
 
-get_tags(Data) -> get_tags(Data, 0, []).
-get_tags(Data, Num, Tags) ->
+%% Дальше следует уёбство. Не смотреть!
+
+get_tags(Data) -> get_tags_with_index(Data, 0, []).
+
+get_tags_with_index(Data, Num, Tags) ->
   ParamName = list_to_binary(io_lib:format("tags[~b]", [Num])),
   case proplists:get_value(ParamName, Data) of
-    undefined -> Tags;
-    Tag -> get_tags(Data, Num + 1, [Tag | Tags])
+    undefined -> get_tags_without_index(Data, Tags);
+    Tag -> get_tags_with_index(Data, Num + 1, [Tag | Tags])
+  end.
+
+get_tags_without_index([], Tags) ->
+  lists:reverse(Tags);
+get_tags_without_index([{ParamName, ParamValue} | Data], Tags) ->
+  case ParamName of
+    <<"tags[]">> -> get_tags_without_index(Data, [ParamValue | Tags]);
+    _ -> get_tags_without_index(Data, Tags)
   end.

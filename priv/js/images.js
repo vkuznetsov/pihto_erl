@@ -15,6 +15,8 @@ function load(tag) {
 function next() {
     if (image_index + 1 >= images_collection.length) return;
 
+    $('#edit_form').modal('hide');
+
     image_index += 1;
     show();
     update_switcher();
@@ -22,6 +24,8 @@ function next() {
 
 function prev() {
     if (image_index == 0) return;
+
+    $('#edit_form').modal('hide');
 
     image_index -= 1;
     show();
@@ -43,9 +47,41 @@ function show() {
     update_comment(image_data);
 }
 
+function preload_image(imgSrc, callback){
+  var objImagePreloader = new Image();
+
+  objImagePreloader.src = imgSrc;
+  if(objImagePreloader.complete){
+    callback();
+    objImagePreloader.onload=function(){};
+  }
+  else{
+    objImagePreloader.onload = function() {
+      callback();
+      //    clear onLoad, IE behaves irratically with animated gifs otherwise
+      objImagePreloader.onload=function(){};
+    }
+  }
+}
+
 function update_image(image_data) {
-    $("#image").attr("src", image_data.url);
     $("#image_link").attr("href", image_data.url);
+
+    var preload = new Image();
+
+    preload.src = image_data.url;
+
+    if (preload.complete) {
+        $("#image").attr("src", image_data.url);
+        preload.onload = function() {};
+    }
+    else {
+        $("#image").attr("src", "/img/loader.gif");
+        preload.onload = function() {
+            $("#image").attr("src", image_data.url);
+            preload.onload = function() {};
+        }
+    }
 }
 
 function update_title(image_data) {
@@ -59,7 +95,7 @@ function update_origin(image_data) {
 
 function update_tags(image_data) {
     $("#tags").html(
-        (image_data.tags || ["notags"]).map(function(tag) {
+        (image_data.tags || ["notag"]).map(function(tag) {
             return "<a href=\"/tag/" + tag + "\">" + tag + "</a>"
         }).join(",&nbsp;")
     );
@@ -71,6 +107,23 @@ function update_added_at(image_data) {
 
 function update_comment(image_data) {
     $("#comment").html(image_data.comment);
+}
+
+function save_image(image_data) {
+    $.ajax({
+        url: "/images/" + image.uid,
+        type: "POST",
+        data: image_data,
+        contentType: "application/x-www-form-urlencoded",
+        dataType: "json",
+        success: function(data, status) {
+
+        },
+
+        error: function() {
+            alert("Error");
+        }
+    });
 }
 
 $(document).ready(function() {
@@ -92,4 +145,28 @@ $(document).keydown(function(e) {
 
 $("#btn_search").click(function() {
     load($("#query").val());
+});
+
+
+$('#edit_form').on('show.bs.modal', function (event) {
+  var modal = $(this);
+  var image_data = images_collection[image_index];
+  var form_title = modal.find('#form-title');
+  var form_tags = modal.find('#form-tags');
+  var form_comment = modal.find('#form-comment');
+
+  form_title.val(image_data.title);
+  form_tags.val(image_data.tags.join(', '));
+  form_comment.val(image_data.comment);
+
+  modal.find('.btn-primary').unbind("click").click(function() {
+    image_data.title = form_title.val();
+    image_data.tags = form_tags.val().split(/\s*,\s*/).filter(function(e) { return e.match(/\w+/) });
+    image_data.comment = form_comment.val();
+
+    save_image(image_data);
+
+    show();
+    modal.modal('hide');
+  })
 });

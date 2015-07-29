@@ -11,7 +11,7 @@
     <nav class="navbar navbar-default">
       <div class="container-fluid">
         <div class="navbar-header">
-          <div class="navbar-brand" id="page_title">Small cats</div>
+          <div class="navbar-brand">Addpic</div>
         </div>
         <div class="navbar-collapse collapse">
           <ul class="nav navbar-nav">
@@ -36,7 +36,7 @@
               <div class="media">
                 <div class="media-top">
                   <a id="image_link" target="blank">
-                    <img id="image" alt="image">
+                    <img id="image" class="img-responsive" src="/img/loader.gif" alt="image">
                   </a>
                 </div>
               </div>
@@ -50,11 +50,48 @@
               <i>Added at</i>:&nbsp;<span id="added_at"></span>
               <br>
               <i>Comment</i>:&nbsp;<span id="comment"></span>
+              <div>
+                <button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#edit_form">
+                  Edit
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
+
+    <div class="modal fade" id="edit_form" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="myModalLabel">Edit</h4>
+          </div>
+          <div class="modal-body">
+            <form>
+              <div class="form-group">
+                <label for="form-title" class="control-label">Title:</label>
+                <input type="text" class="form-control" id="form-title">
+              </div>
+              <div class="form-group">
+                <label for="form-tags" class="control-label">Tags:</label>
+                <input type="text" class="form-control" id="form-tags">
+              </div>
+              <div class="form-group">
+                <label for="form-comment" class="control-label">Comment:</label>
+                <textarea class="form-control" id="form-comment" rows="7"></textarea>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-primary">Save changes</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
     <script src="js/bootstrap.min.js"></script>
     <script src="js/images.js"></script>
