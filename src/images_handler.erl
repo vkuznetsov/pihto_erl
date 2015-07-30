@@ -47,11 +47,11 @@ get_image(Req, State) ->
     {undefined, Req1} ->
       {Tag, Req2} = cowboy_req:qs_val(<<"tag">>, Req1),
       Images = images:search(Tag),
-      JSON = jsx:encode(Images),
+      JSON = images_to_json(Images),
       {JSON, Req2, State};
     {ImageId, Req1} ->
       Image = images:get(ImageId),
-      JSON = jsx:encode(Image),
+      JSON = image_to_json(Image),
       {JSON, Req1, State}
   end.
 
@@ -100,3 +100,20 @@ get_tags_without_index([{ParamName, ParamValue} | Data], Tags) ->
     <<"tags[]">> -> get_tags_without_index(Data, [ParamValue | Tags]);
     _ -> get_tags_without_index(Data, Tags)
   end.
+
+images_to_json(Images) ->
+  {BinaryString, _} = lists:foldl(
+    fun(Image, {Binary, Empty}) ->
+      Encoded = jiffy:encode({Image}),
+      if
+        Empty -> {<<"[", Encoded/binary>>, false};
+        true -> {<<Binary/binary, ",", Encoded/binary>>, false}
+      end
+    end,
+    {<<>>, true},
+    Images
+  ),
+  <<BinaryString/binary, "]">>.
+
+image_to_json(Image) ->
+  jiffy:encode({Image}).
