@@ -65,7 +65,16 @@ save_image(Req, State) ->
            T -> T
          end,
 
-  AllowedKeys = [<<"url">>, <<"origin">>, <<"title">>, <<"comment">>, <<"added_at">>, <<"width">>, <<"height">>],
+  AllowedKeys = [
+    <<"url">>,
+    <<"origin">>,
+    <<"referrer">>,
+    <<"title">>,
+    <<"comment">>,
+    <<"added_at">>,
+    <<"width">>,
+    <<"height">>
+  ],
 
   FilteredParams = lists:foldl(
     fun(Key, NewList) ->

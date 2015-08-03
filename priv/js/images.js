@@ -1,5 +1,54 @@
 var images_collection, image_index;
 
+//======================================================================================================================
+// Events
+//======================================================================================================================
+var __event_observers = {};
+
+function on_event(event_name, callback) {
+  if (__event_observers[event_name] == undefined) {
+    __event_observers[event_name] = [callback];
+  }
+  else {
+    __event_observers[event_name].push(callback);
+  }
+}
+function fire_event(event_name, argument) {
+  if (__event_observers[event_name] != undefined) {
+    __event_observers[event_name].forEach(function(observer_callback) {
+      observer_callback(argument);
+    });
+  }
+}
+
+//======================================================================================================================
+// Collection
+//======================================================================================================================
+var __collection = {data: [], image_index: 0};
+
+function collection_load(tag) {
+  $.getJSON("=images?tag=" + tag, function(data) {
+    images_collection = data;
+    image_index = 0;
+    
+    __collection.data = data;
+    __collection.image_index = 0;
+    
+    fire_event("collection.loaded", __collection);
+  });
+
+  $("#page_title").html(tag);  
+}
+
+//======================================================================================================================
+// Viewer
+//======================================================================================================================
+
+on_event("collection.switch", function(image) {
+  view_update_image(image);
+  view_update_title(image);
+});
+
 function load(tag) {
   $.getJSON("/images?tag=" + tag, function(data) {
     images_collection = data;
@@ -96,8 +145,8 @@ function update_origin(image_data) {
 function update_tags(image_data) {
     $("#tags").html(
         (image_data.tags || ["notag"]).map(function(tag) {
-            return "<a href=\"/tag/" + tag + "\">" + tag + "</a>"
-        }).join(",&nbsp;")
+            return "<a class=\"label label-info\" href=\"=tag=" + tag + "\">" + tag + "</a>"
+        }).join("&nbsp;")
     );
 }
 

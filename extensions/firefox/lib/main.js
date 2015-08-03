@@ -35,9 +35,10 @@ var menuItem = contextMenu.Item({
                  '    "title": document.title,' +
                  '    "comment": "",' +
                  '    "origin": document.URL,' +
+                 '    "referrer": document.referrer,' +
                  '    "width": image.naturalWidth,' +
                  '    "height": image.naturalHeight,' +
-                 '    "added_at": new Date().toString()' +
+                 '    "added_at": new Date().toISOString()' +
                  '  });' +
                  '});',
   onMessage: function (image_data) {

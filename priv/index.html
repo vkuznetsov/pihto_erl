@@ -35,25 +35,21 @@
             <div class="panel-body">
               <div class="media">
                 <div class="media-top">
-                  <a id="image_link" target="blank">
-                    <img id="image" class="img-responsive" src="/img/loader.gif" alt="image">
+                  <a id="image_link" target="_blank">
+                    <img id="image" class="img-responsive center-block" src="/img/loader.gif" alt="image">
                   </a>
                 </div>
               </div>
             </div>
             <div class="panel-footer">
               <h4 id="title"></h4>
-              <i>Origin</i>:&nbsp;<a id="origin"></a>
-              <br>
-              <i>Tags</i>:&nbsp<span id="tags"></span>
-              <br>
-              <i>Added at</i>:&nbsp;<span id="added_at"></span>
-              <br>
-              <i>Comment</i>:&nbsp;<span id="comment"></span>
+              <p><i>Origin</i>:&nbsp;<a id="origin" target="_blank"></a></p>
+              <p><i>Tags</i>:&nbsp<span id="tags"></span></p>
+              <p><i>Added at</i>:&nbsp;<span id="added_at"></span></p>
+              <p><i>Comment</i>:&nbsp;<span id="comment"></span></p>
               <div>
-                <button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#edit_form">
-                  Edit
-                </button>
+                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#edit_form">Edit</button>
+                <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#delete_image">Delete</button>
               </div>
             </div>
           </div>
