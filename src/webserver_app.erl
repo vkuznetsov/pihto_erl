@@ -13,10 +13,12 @@ start(_StartType, _StartArgs) ->
   Dispatch = cowboy_router:compile([
     {'_', [
       {"/", cowboy_static, {priv_file, webserver, "index.html"}},
+      {"/t", cowboy_static, {priv_file, webserver, "index2.html"}},
       {"/js/[...]", cowboy_static, {priv_dir, webserver, "js"}},
       {"/css/[...]", cowboy_static, {priv_dir, webserver, "css"}},
       {"/fonts/[...]", cowboy_static, {priv_dir, webserver, "fonts"}},
       {"/img/[...]", cowboy_static, {priv_dir, webserver, "img"}},
+      {"/thumbs/[:image_id]", thumbs_handler, []},
       {"/images/[:image_id]", images_handler, []}
     ]}
   ]),

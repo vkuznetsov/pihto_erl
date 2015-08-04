@@ -58,8 +58,8 @@ get_image(Req, State) ->
 save_image(Req, State) ->
   {ok, Data, Req1} = cowboy_req:body_qs(Req),
 
-  ImageId = list_to_binary(md5:md5_hex(proplists:get_value(<<"url">>, Data))),
-
+  URL = proplists:get_value(<<"url">>, Data),
+  ImageId = list_to_binary(md5:md5_hex(URL)),
   Tags = case get_tags(Data) of
            [] -> [<<"notag">>];
            T -> T
@@ -88,6 +88,7 @@ save_image(Req, State) ->
   ),
 
   images:save(ImageId, FilteredParams, Tags),
+  thumbs:save_async(ImageId, URL),
   io:format("Saved: ~p Tags: ~p~n", [FilteredParams, Tags]),
   {true, Req1, State}.
 

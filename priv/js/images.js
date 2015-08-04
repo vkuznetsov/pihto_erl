@@ -54,11 +54,26 @@ function load(tag) {
     images_collection = data;
     image_index = 0;
 
-    show();
+//    show();
     update_switcher();
-  });
 
-  $("#page_title").html(tag);
+    $("#page_title").html(tag);
+
+    load_thumbs(images_collection);
+  });
+}
+
+function load_thumbs(images) {
+  $('#thumbs').html("");
+  images.forEach(function(image) {
+    $("#thumbs").append(
+//      "<div class=\"col-lg-1\">" +
+      "  <a href=\"" + image.url + "\" target=\"_blank\">" +
+        "    <img class=\"thumb\" src=\"/thumbs/" + image.uid + "\" alt=\"image\" width=\"140\" height=\"140\">" +
+      "  </a>"
+//      "</div>"
+    );
+  });
 }
 
 function next() {
@@ -151,7 +166,16 @@ function update_tags(image_data) {
 }
 
 function update_added_at(image_data) {
-    $("#added_at").html(image_data.added_at);
+    var date;
+
+    if (image_data.added_at) {
+      date = new Date(image_data.added_at).toString();
+    }
+    else {
+      date = "";
+    }
+
+    $("#added_at").html(date);
 }
 
 function update_comment(image_data) {
@@ -184,7 +208,7 @@ $(document).ready(function() {
         next();
     });
 
-    load("notag");
+    load("cat");
 });
 
 $(document).keydown(function(e) {

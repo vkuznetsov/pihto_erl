@@ -54,9 +54,19 @@ code_change(_OldVersion, State, _Extra) ->
 
 search(Riak, Tag) ->
   Request = <<"tags_set:", Tag/binary>>,
-  {ok, Results} = riakc_pb_socket:search(Riak, <<"images_index">>, Request, [{rows, 500}]),
+  {ok, Results} = riakc_pb_socket:search(Riak, <<"images_index">>, Request, [{rows, 500}, {sort, <<"added_at_register asc">>}]),
   Docs = Results#search_results.docs,
-  [fetch_image(Riak, proplists:get_value(<<"_yz_rk">>, Doc)) || {_Index, Doc} <- Docs].
+
+  AddSearchedImageToResults = fun({_Index, Doc}, Results) ->
+    ImageId = proplists:get_value(<<"_yz_rk">>, Doc),
+    case fetch_image(Riak, ImageId) of
+      notfound -> Results;
+      Image -> [Image | Results]
+    end
+  end,
+  lists:foldl(AddSearchedImageToResults, [], Docs).
+
+%%   [fetch_image(Riak, proplists:get_value(<<"_yz_rk">>, Doc)) || {_Index, Doc} <- Docs].
 
 fetch_image(Riak, ImageId) ->
   case riakc_pb_socket:fetch_type(Riak, {<<"images">>, <<"images">>}, ImageId) of
@@ -80,7 +90,7 @@ update_image_tags(ImageMap, Tags) ->
     {<<"tags">>, set},
     fun(TagsSet) ->
       CurrentTags = riakc_set:value(TagsSet),
-%%       NewTags = lists:subtract(Tags, CurrentTags),
+      %% NewTags = lists:subtract(Tags, CurrentTags),
       NewTags = Tags,
       ExtraTags = lists:subtract(CurrentTags, Tags),
 
