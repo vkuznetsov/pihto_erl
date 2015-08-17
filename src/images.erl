@@ -54,19 +54,25 @@ code_change(_OldVersion, State, _Extra) ->
 
 search(Riak, Tag) ->
   Request = <<"tags_set:", Tag/binary>>,
-  {ok, Results} = riakc_pb_socket:search(Riak, <<"images_index">>, Request, [{rows, 500}, {sort, <<"added_at_register asc">>}]),
+  {ok, Results} = riakc_pb_socket:search(Riak, <<"images_index">>, Request, [{rows, 100}, {sort, <<"added_at_register asc">>}]),
   Docs = Results#search_results.docs,
 
-  AddSearchedImageToResults = fun({_Index, Doc}, Results) ->
-    ImageId = proplists:get_value(<<"_yz_rk">>, Doc),
-    case fetch_image(Riak, ImageId) of
-      notfound -> Results;
-      Image -> [Image | Results]
-    end
-  end,
-  lists:foldl(AddSearchedImageToResults, [], Docs).
+  ImageIds = lists:foldl(
+               fun({_Index, Doc}, Acc) ->
+                   {_, ImageId} = lists:keyfind(<<"_yz_rk">>, 1, Doc),
+                   [ImageId | Acc]
+               end, [], Docs
+              ),
+  ImageIds.
 
-%%   [fetch_image(Riak, proplists:get_value(<<"_yz_rk">>, Doc)) || {_Index, Doc} <- Docs].
+%% AddSearchedImageToResults = fun({_Index, Doc}, Results) ->
+%%   ImageId = proplists:get_value(<<"_yz_rk">>, Doc),
+%%   case fetch_image(Riak, ImageId) of
+%%     notfound -> Results;
+%%     Image -> [Image | Results]
+%%   end
+%% end,
+%% lists:foldl(AddSearchedImageToResults, [], Docs).
 
 fetch_image(Riak, ImageId) ->
   case riakc_pb_socket:fetch_type(Riak, {<<"images">>, <<"images">>}, ImageId) of
@@ -76,43 +82,43 @@ fetch_image(Riak, ImageId) ->
 
 update_image(Riak, ImageId, Props, Tags) ->
   riakc_pb_socket:modify_type(Riak,
-    fun(Map) ->
-      Map1 = update_image_tags(Map, Tags),
-      update_image_fields(Map1, Props)
-    end,
-    {<<"images">>, <<"images">>},
-    ImageId,
-    [create]
-  ).
+                              fun(Map) ->
+                                  Map1 = update_image_tags(Map, Tags),
+                                  update_image_fields(Map1, Props)
+                              end,
+                              {<<"images">>, <<"images">>},
+                              ImageId,
+                              [create]
+                             ).
 
 update_image_tags(ImageMap, Tags) ->
   riakc_map:update(
     {<<"tags">>, set},
     fun(TagsSet) ->
-      CurrentTags = riakc_set:value(TagsSet),
-      %% NewTags = lists:subtract(Tags, CurrentTags),
-      NewTags = Tags,
-      ExtraTags = lists:subtract(CurrentTags, Tags),
+        CurrentTags = riakc_set:value(TagsSet),
+        %% NewTags = lists:subtract(Tags, CurrentTags),
+        NewTags = Tags,
+        ExtraTags = lists:subtract(CurrentTags, Tags),
 
-      TagsSet1 = add_image_tags_to_set(NewTags, TagsSet),
-      del_image_tags_from_set(ExtraTags, TagsSet1)
+        TagsSet1 = add_image_tags_to_set(NewTags, TagsSet),
+        del_image_tags_from_set(ExtraTags, TagsSet1)
 
     end,
     ImageMap
-  ).
+   ).
 
 update_image_fields(ImageMap, Props) ->
   lists:foldl(
     fun({Key, Value}, Map) ->
-      riakc_map:update(
-        {Key, register},
-        fun(Reg) -> riakc_register:set(Value, Reg) end,
-        Map
-      )
+        riakc_map:update(
+          {Key, register},
+          fun(Reg) -> riakc_register:set(Value, Reg) end,
+          Map
+         )
     end,
     ImageMap,
     Props
-  ).
+   ).
 
 add_image_tags_to_set([], RiakSet) -> RiakSet;
 add_image_tags_to_set([Tag | Tags], RiakSet) ->

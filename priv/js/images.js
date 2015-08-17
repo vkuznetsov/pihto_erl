@@ -1,54 +1,5 @@
 var images_collection, image_index;
 
-//======================================================================================================================
-// Events
-//======================================================================================================================
-var __event_observers = {};
-
-function on_event(event_name, callback) {
-  if (__event_observers[event_name] == undefined) {
-    __event_observers[event_name] = [callback];
-  }
-  else {
-    __event_observers[event_name].push(callback);
-  }
-}
-function fire_event(event_name, argument) {
-  if (__event_observers[event_name] != undefined) {
-    __event_observers[event_name].forEach(function(observer_callback) {
-      observer_callback(argument);
-    });
-  }
-}
-
-//======================================================================================================================
-// Collection
-//======================================================================================================================
-var __collection = {data: [], image_index: 0};
-
-function collection_load(tag) {
-  $.getJSON("=images?tag=" + tag, function(data) {
-    images_collection = data;
-    image_index = 0;
-    
-    __collection.data = data;
-    __collection.image_index = 0;
-    
-    fire_event("collection.loaded", __collection);
-  });
-
-  $("#page_title").html(tag);  
-}
-
-//======================================================================================================================
-// Viewer
-//======================================================================================================================
-
-on_event("collection.switch", function(image) {
-  view_update_image(image);
-  view_update_title(image);
-});
-
 function load(tag) {
   $.getJSON("/images?tag=" + tag, function(data) {
     images_collection = data;
@@ -67,12 +18,24 @@ function load_thumbs(images) {
   $('#thumbs').html("");
   images.forEach(function(image) {
     $("#thumbs").append(
-//      "<div class=\"col-lg-1\">" +
-      "  <a href=\"" + image.url + "\" target=\"_blank\">" +
-        "    <img class=\"thumb\" src=\"/thumbs/" + image.uid + "\" alt=\"image\" width=\"140\" height=\"140\">" +
-      "  </a>"
-//      "</div>"
+      "<div class=\"thumb-box\">" +
+      "  <span class=\"thumb-box-overlay\">" +
+      "    <span class=\"thumb-box-overlay-background\"></span>" +
+      "    <a class=\"glyphicon glyphicon-new-window\" href=\"/image/origin/" + image + "\" target=\"_blank\"></a>" +
+      "    <a class=\"glyphicon glyphicon-picture\" href=\"/image/src/" + image + "\" target=\"_blank\"></a>" +
+      "  </span>" +
+      "  <a class=\"openslide\" href=\"/st/image/" + image + "\" data-image=\"" + image + "\" target=\"_blank\">" +
+      "    <img class=\"thumb\" src=\"/st/thumb/" + image + "\" alt=\"image\">" +
+      "  </a>" +
+      "</div>"
     );
+  });
+
+  $('.openslide').click(function() {
+    var image_id = $(this).data().image;
+    $('.slideshow-image').attr("src", "/st/image/" + image_id);
+    $('#slideshow-window').modal();
+    return false;
   });
 }
 
@@ -242,4 +205,47 @@ $('#edit_form').on('show.bs.modal', function (event) {
     show();
     modal.modal('hide');
   })
+});
+
+function slideshow(image_id) {
+    var preload = new Image();
+
+    preload.src = '/st/image/' + image_id;
+
+    if (preload.complete) {
+        showSlideshowImage(preload);
+        preload.onload = function() {};
+    }
+    else {
+        $("#image").attr("src", "/img/loader.gif");
+        preload.onload = function() {
+          showSlideshowImage(preload);
+          preload.onload = function() {};
+        }
+    }
+
+}
+
+function showSlideshowImage(image) {
+  var max_width = $(window).width();
+  var max_height = $(window).height();
+
+  var width = image.width > max_width ? max_width : image.width;
+  var height = image.height > max_height ? max_height : image.height;
+
+  var top = max_height / 2 - height / 2;
+  var left = max_width / 2 - width / 2;
+
+  $('.slideshow img').attr("src", image.src);
+  $('.slideshow').css({
+    'top': top,
+    'left': left,
+    'max-width': max_width,
+    'max-height': max_height,
+    'visibility': 'visible'
+  });
+}
+
+$('.slideshow').click(function () {
+  $('.slideshow').css({visibility: 'hidden'});
 });

@@ -3,5 +3,5 @@
 # while read url
 read url
 # do
-  curl -L -s $url | convert - -thumbnail 140x140^ -gravity center -extent 140x140 jpg:-
+  curl -L -s $url | convert - -thumbnail 140x140^ -gravity center -extent 140x140 jpeg:-
 # done

@@ -18,7 +18,8 @@ start(_StartType, _StartArgs) ->
       {"/css/[...]", cowboy_static, {priv_dir, webserver, "css"}},
       {"/fonts/[...]", cowboy_static, {priv_dir, webserver, "fonts"}},
       {"/img/[...]", cowboy_static, {priv_dir, webserver, "img"}},
-      {"/thumbs/[:image_id]", thumbs_handler, []},
+      {"/st/:type/:image_id", thumbs_handler, []},
+      {"/image/:target_type/:image_id", image_redirect_handler, []},
       {"/images/[:image_id]", images_handler, []}
     ]}
   ]),

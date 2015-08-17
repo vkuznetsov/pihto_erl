@@ -1,0 +1,8 @@
+#!/bin/sh
+
+# while read url
+read url
+# do
+  #echo url
+  curl -L -s $url | convert - -thumbnail '1920x1080>' jpeg:-
+# done

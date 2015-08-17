@@ -5,7 +5,9 @@
   {registered, []},
   {applications, [
                   kernel,
-                  stdlib
+                  stdlib,
+                  cowboy,
+                  riakc
                  ]},
   {mod, { webserver_app, []}},
   {env, []}

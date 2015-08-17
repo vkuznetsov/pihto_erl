@@ -1,12 +1,12 @@
 -module(utils).
 
--export([get_all_image_ids/1, regenerate_thumbs/1, resave_images/1]).
+-export([get_all_image_ids/1, regenerate_thumbs/2, resave_images/1]).
 
 get_all_image_ids(Riak) ->
   {ok, Ids} = riakc_pb_socket:list_keys(Riak, {<<"images">>, <<"images">>}),
   Ids.
 
-regenerate_thumbs(ImageIds) ->
+regenerate_thumbs(Type, ImageIds) ->
   Fun = fun(ImageId) ->
     Image = images:get(ImageId),
     {_, URL} = lists:keyfind(<<"url">>, 1, Image),
@@ -16,7 +16,7 @@ regenerate_thumbs(ImageIds) ->
       {_, undefined} -> io:format("Undefined url ~s~n", [ImageId]);
       {_, _} ->
         io:format("Saving Id:~s URL:~s~n", [ImageId, URL]),
-        thumbs:save_sync(ImageId, URL)
+        thumbs:save_sync(Type, ImageId, URL)
     end
   end,
 
