@@ -2,9 +2,12 @@
 
 -export([get_all_image_ids/1, regenerate_thumbs/2, resave_images/1]).
 
+%% -spec get_all_image_ids(pid()) -> [binary()].
 get_all_image_ids(Riak) ->
-  {ok, Ids} = riakc_pb_socket:list_keys(Riak, {<<"images">>, <<"images">>}),
-  Ids.
+  case riakc_pb_socket:list_keys(Riak, {<<"images">>, <<"images">>}) of
+    {ok, Ids} -> Ids;
+    {error, notfound} -> []
+  end.
 
 regenerate_thumbs(Type, ImageIds) ->
   Fun = fun(ImageId) ->

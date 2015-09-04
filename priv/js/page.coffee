@@ -23,12 +23,14 @@ class Slice
   image_ids: ->
     @data
 
-class Collection
-  constructor: ->
-    @index = 0
+#======================================================================================================================
 
-  load: (tag) ->
-    $.getJSON "/images?tag=" + tag, (data) ->
+class Collection
+  constructor: (query)->
+    @query = query
+
+  load: ->
+    $.getJSON "/images?tag=" + @query, (data) ->
       @slice = new Slice(data)
       @index = 0
       events.fire('collection.loaded', this)
@@ -82,7 +84,33 @@ class Slideshow
           $("#slideshow-image").attr("src", preload.src)
           preload.onload = ->
 
+    this.load_data(image_id)
+
     $("#slideshow-window").modal()
+
+  load_data: (image_id) ->
+    slideshow = this
+    $.getJSON "/images/" + image_id, (data) ->
+      slideshow.update_data(data)
+
+  update_data: (data) ->
+    this.data = data
+
+    $("#slideshow-window #title").html(data.title)
+
+    $("#slideshow-window #origin").attr("href", data.origin)
+    $("#slideshow-window #origin").html(data.origin)
+
+    $("#slideshow-window #tags").html(
+        (data.tags || ["notag"]).map((tag) ->
+           "<a class=\"label label-info\" href=\"?q=" + tag + "\">" + tag + "</a>"
+        ).join("&nbsp;")
+    )
+
+    $("#slideshow-window #comment").html(data.comment)
+
+    date = if data.added_at then new Date(data.added_at).toString() else ""
+    $("#slideshow-window #added_at").html(date);
 
   next: ->
     current_index = @collection.slice.image_ids().indexOf(@image_id)
@@ -98,6 +126,23 @@ class Slideshow
 
 #======================================================================================================================
 
+class Page
+  constructor: ->
+    query = this.get_query_parameter("q")
+    this.load(query) if query
+
+  load: (query) ->
+    collection = new Collection(query)
+    collection.load()
+
+  get_query_parameter: (name) ->
+    parameters = window.location.search.split(/[?&]/).slice(1)
+    for i in [0...parameters.length]
+      [parameter_name, parameter_value] = parameters[i].split("=")
+      return parameter_value if parameter_name == name
+
+#======================================================================================================================
+
 events.on "collection.loaded", (collection) ->
   gallery = new Gallery(collection)
   gallery.show()
@@ -107,16 +152,43 @@ events.on "collection.loaded", (collection) ->
 
 $(document).ready ->
   $('#slideshow-window').keydown (e) ->
-      if e.which == 39
-        document.slideshow.next()
-      else if e.which == 37
-        document.slideshow.prev()
+    if e.which == 39
+      document.slideshow.next()
+    else if e.which == 37
+      document.slideshow.prev()
+
+  page = new Page
 
   $("#btn_search").click ->
-    collection = new Collection
-    collection.load($("#query").val());
+    query = $("#query").val()
+    if query
+      page.load(query)
+      window.history.pushState(query, query, "/t?q=" + query)
+    false
 
-  collection = new Collection
-  collection.load("cat")
+  $('#edit_form').on('show.bs.modal', (event) ->
+    modal = $(this)
+    data = document.slideshow.data
 
+    modal.find('#form_title').val(data.title)
+    modal.find('#form_tags').val(data.tags.join(', '))
+    modal.find('#form_comment').val(data.comment)
 
+    modal.find('.btn-primary').unbind("click").click ->
+      newdata = $.extend({}, data)
+      newdata.title = modal.find('#form_title').val();
+      newdata.tags = modal.find('#form_tags').val().split(/\s*,\s*/).filter((e) -> e.match(/\w+/))
+      newdata.comment = modal.find('#form_comment').val();
+
+      $.ajax({
+        url: "/images/" + document.slideshow.image_id,
+        type: "POST",
+        data: newdata,
+        contentType: "application/x-www-form-urlencoded",
+        dataType: "json",
+        success: (data, status) -> document.slideshow.update_data(newdata);
+        error: -> alert("Error")
+      })
+
+      modal.modal('hide');
+  )

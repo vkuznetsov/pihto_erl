@@ -54,25 +54,16 @@ code_change(_OldVersion, State, _Extra) ->
 
 search(Riak, Tag) ->
   Request = <<"tags_set:", Tag/binary>>,
-  {ok, Results} = riakc_pb_socket:search(Riak, <<"images_index">>, Request, [{rows, 100}, {sort, <<"added_at_register asc">>}]),
+  {ok, Results} = riakc_pb_socket:search(Riak, <<"images_index">>, Request, [{rows, 100}, {sort, <<"added_at_register desc">>}]),
   Docs = Results#search_results.docs,
 
-  ImageIds = lists:foldl(
+  ImageIds = lists:foldr(
                fun({_Index, Doc}, Acc) ->
                    {_, ImageId} = lists:keyfind(<<"_yz_rk">>, 1, Doc),
                    [ImageId | Acc]
                end, [], Docs
               ),
   ImageIds.
-
-%% AddSearchedImageToResults = fun({_Index, Doc}, Results) ->
-%%   ImageId = proplists:get_value(<<"_yz_rk">>, Doc),
-%%   case fetch_image(Riak, ImageId) of
-%%     notfound -> Results;
-%%     Image -> [Image | Results]
-%%   end
-%% end,
-%% lists:foldl(AddSearchedImageToResults, [], Docs).
 
 fetch_image(Riak, ImageId) ->
   case riakc_pb_socket:fetch_type(Riak, {<<"images">>, <<"images">>}, ImageId) of

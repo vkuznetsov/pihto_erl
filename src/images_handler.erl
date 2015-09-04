@@ -1,17 +1,17 @@
 -module(images_handler).
 
 -export([
-         init/3,
-         allowed_methods/2,
-         content_types_provided/2,
-         content_types_accepted/2,
-         delete_resource/2
-        ]).
+  init/3,
+  allowed_methods/2,
+  content_types_provided/2,
+  content_types_accepted/2,
+  delete_resource/2
+]).
 
 -export([
-         get_image/2,
-         save_image/2
-        ]).
+  get_image/2,
+  save_image/2
+]).
 
 init(_Transport, _Req, _Opts) ->
   random:seed(now()),
