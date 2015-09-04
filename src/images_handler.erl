@@ -112,20 +112,3 @@ get_tags_without_index([{ParamName, ParamValue} | Data], Tags) ->
     <<"tags[]">> -> get_tags_without_index(Data, [ParamValue | Tags]);
     _ -> get_tags_without_index(Data, Tags)
   end.
-
-%% images_to_json(Images) ->
-%%   {BinaryString, _} = lists:foldl(
-%%                         fun(Image, {Binary, Empty}) ->
-%%                             Encoded = jiffy:encode({Image}),
-%%                             if
-%%                               Empty -> {<<"[", Encoded/binary>>, false};
-%%                               true -> {<<Binary/binary, ",", Encoded/binary>>, false}
-%%                             end
-%%                         end,
-%%                         {<<>>, true},
-%%                         Images
-%%                        ),
-%%   <<BinaryString/binary, "]">>.
-
-%% image_to_json(Image) ->
-%%   jiffy:encode({Image}).

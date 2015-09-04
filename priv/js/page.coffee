@@ -152,10 +152,13 @@ events.on "collection.loaded", (collection) ->
 
 $(document).ready ->
   $('#slideshow-window').keydown (e) ->
-    if e.which == 39
-      document.slideshow.next()
-    else if e.which == 37
-      document.slideshow.prev()
+    switch e.which
+      # Rigth
+      when 39 then document.slideshow.next()
+      # Left
+      when 37 then document.slideshow.prev()
+      # E
+      when 69 then $('#edit_form').modal()
 
   page = new Page
 

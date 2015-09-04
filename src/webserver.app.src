@@ -1,14 +1,24 @@
 {application, webserver,
  [
-  {description, ""},
-  {vsn, "1"},
-  {registered, []},
-  {applications, [
-                  kernel,
-                  stdlib,
-                  cowboy,
-                  riakc
-                 ]},
-  {mod, { webserver_app, []}},
-  {env, []}
+     {description, ""},
+     {vsn, "1"},
+     {registered, []},
+     {applications, [
+         kernel,
+         stdlib,
+         cowboy,
+         riakc
+     ]},
+     {mod, { webserver_app, []}},
+     {env, [
+         {pools, [
+             {images_store_pool, images_store_worker, [
+                 {size, 10},
+                 {max_overflow, 20}
+             ], [
+                  {riak_host, "127.0.0.1"},
+                  {riak_port, 8087}
+              ]}
+         ]}
+     ]}
  ]}.
