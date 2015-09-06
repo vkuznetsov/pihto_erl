@@ -3,23 +3,29 @@
 
 -include_lib("riakc/include/riakc.hrl").
 
--export([start_link/0, init/1, terminate/2, handle_call/3, handle_cast/2, handle_info/2, code_change/3]).
+-export([start_link/1, init/1, terminate/2, handle_call/3, handle_cast/2, handle_info/2, code_change/3]).
 -export([search/1, get/1, save/3, delete/1]).
 
 search(Tag) ->
-  gen_server:call(?MODULE, {search, Tag}).
+    poolboy:transaction(images_pool, fun(Worker) ->
+        gen_server:call(Worker, {search, Tag})
+    end).
 
 get(ImageId) ->
-  gen_server:call(?MODULE, {get, ImageId}).
+    poolboy:transaction(images_pool, fun(Worker) ->
+        gen_server:call(Worker, {get, ImageId})
+    end).
 
 save(ImageId, Data, Tags) ->
-  gen_server:call(?MODULE, {save, ImageId, Data, Tags}).
+    poolboy:transaction(images_pool, fun(Worker) ->
+        gen_server:call(Worker, {save, ImageId, Data, Tags})
+    end).
 
 delete(ImageId) ->
   gen_server:call(?MODULE, {delete, ImageId}).
 
-start_link() ->
-  gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+start_link(Args) ->
+    gen_server:start_link(?MODULE, Args, []).
 
 init([]) ->
   {ok, _Riak} = riakc_pb_socket:start_link("127.0.0.1", 8087).

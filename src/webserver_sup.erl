@@ -30,5 +30,5 @@ init([]) ->
         poolboy:child_spec(PoolName, PoolArgs, WorkerArgs)
                           end, Pools),
 
-    {ok, { {one_for_one, 10, 10}, [?CHILD(images, worker), ?CHILD(thumbs, worker)] ++ PoolSpecs} }.
+    {ok, { {one_for_one, 10, 10}, [?CHILD(thumbs, worker)] ++ PoolSpecs} }.
 

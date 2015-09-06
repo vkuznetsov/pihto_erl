@@ -5,13 +5,13 @@ all: deps compile
 deps:
 	@( $(REBAR) get-deps )
 
-compile: clean
+compile:
 	@( $(REBAR) compile )
 
 clean:
 	@( $(REBAR) clean )
 
-run:
-	@( erl -pa $PWD/ebin deps/*/ebin -s webserver )
+run: compile
+	@( erl -pa $PWD/ebin deps/*/ebin -eval "application:ensure_all_started(webserver), sync:go()." )
 
 .PHONY: all deps compile clean run

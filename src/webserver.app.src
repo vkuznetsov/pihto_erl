@@ -12,13 +12,30 @@
      {mod, { webserver_app, []}},
      {env, [
          {pools, [
-             {images_store_pool, images_store_worker, [
-                 {size, 10},
-                 {max_overflow, 20}
-             ], [
+             {images_store_pool, images_store_worker,
+              [
+                  {size, 10},
+                  {max_overflow, 20}
+              ],
+              [
                   {riak_host, "127.0.0.1"},
                   {riak_port, 8087}
-              ]}
+              ]},
+             {images_pool, images,
+              [
+                  {size, 10},
+                  {max_overflow, 20}
+              ], []
+             },
+             {thumb_pool, thumb_worker,
+              [
+                  {size, 10},
+                  {max_overflow, 20}
+              ], [
+                  {riak_host, "127.0.0.1"},
+                  {riak_port, 8087}
+              ]
+             }
          ]}
      ]}
  ]}.

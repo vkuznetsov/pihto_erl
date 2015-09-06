@@ -15,10 +15,10 @@ form.on("show", function() {
 form.port.on("save", function(image_data) {
   Request({
     url: "http://localhost:8080/images",
-    content: image_data,
-    contentType: "application/x-www-form-urlencoded",
+    content: JSON.stringify(image_data),
+    contentType: "application/json",
     onComplete: function (response) {
-      console.log("Saved: " + image_data.url + "\nResponse: " + response.status);
+      console.log("Save: " + image_data.url + "\nResponse: " + response.status);
 
       if (response.status == 200 || response.status == 204) form.hide();
       else form.port.emit("error", "Application Error " + response.status);
