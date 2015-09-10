@@ -1,4 +1,4 @@
--module(image_redirect_handler).
+-module(pihto_image_redirect_handler).
 -export([init/3, handle/2, terminate/3]).
 
 init({tcp, http}, Req, _Opts) ->
@@ -7,7 +7,7 @@ init({tcp, http}, Req, _Opts) ->
 handle(Req, State) ->
   {ImageId, Req1} = cowboy_req:binding(image_id, Req),
 
-  case images:get(ImageId) of
+  case pihto_images:get(<<"vlas">>, ImageId) of
     notfound -> {ok, notfound(Req1), State};
     Image ->
       {URL, Req2} = case cowboy_req:binding(target_type, Req1) of

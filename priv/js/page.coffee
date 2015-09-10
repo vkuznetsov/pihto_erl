@@ -177,6 +177,15 @@ $(document).ready ->
     modal.find('#form_tags').val(data.tags.join(', '))
     modal.find('#form_comment').val(data.comment)
 
+    modal.find('.btn-danger').unbind("click").click ->
+      if confirm("Are you sure?")
+        $.ajax({
+          url: "/images/" + document.slideshow.image_id,
+          type: "DELETE",
+          success: -> alert("Deleted")
+          error: -> alert("Error")
+        })
+
     modal.find('.btn-primary').unbind("click").click ->
       newdata = $.extend({}, data)
       newdata.title = modal.find('#form_title').val();
@@ -186,8 +195,8 @@ $(document).ready ->
       $.ajax({
         url: "/images/" + document.slideshow.image_id,
         type: "POST",
-        data: newdata,
-        contentType: "application/x-www-form-urlencoded",
+        data: JSON.stringify(newdata),
+        contentType: "application/json",
         dataType: "json",
         success: (data, status) -> document.slideshow.update_data(newdata);
         error: -> alert("Error")

@@ -1,8 +1,9 @@
--module(images_store_worker).
+-module(pihto_images).
 -behaviour(gen_server).
 -behaviour(poolboy_worker).
 
--export([start_link/1]).
+-export([start_link/1, get/2, delete/2, search/2, save/2]).
+
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2,
          code_change/3]).
 
@@ -29,8 +30,25 @@
 %%% API
 %%%===================================================================
 
+-spec start_link(Args :: term()) -> {ok, pid()}.
 start_link(Args) ->
     gen_server:start_link(?MODULE, Args, []).
+
+-spec get(UserId :: id(), ImageId :: id()) -> notfound | {ok, image()}.
+get(UserId, ImageId) ->
+    poolboy:transaction(pihto_images_pool, fun(Worker) -> gen_server:call(Worker, {get, UserId, ImageId}) end).
+
+-spec delete(UserId :: id(), ImageId :: id()) -> ok | notfound.
+delete(UserId, ImageId) ->
+    poolboy:transaction(pihto_images_pool, fun(Worker) -> gen_server:call(Worker, {delete, UserId, ImageId}) end).
+
+-spec search(UserId :: id(), Tag :: image_tag()) -> [] | [id()].
+search(UserId, Tag) ->
+    poolboy:transaction(pihto_images_pool, fun(Worker) -> gen_server:call(Worker, {search, UserId, Tag}) end).
+
+-spec save(UserId :: id(), Image :: image()) -> ok | error.
+save(UserId, Image) ->
+    poolboy:transaction(pihto_images_pool, fun(Worker) -> gen_server:call(Worker, {save, UserId, Image}) end).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -52,9 +70,9 @@ handle_call({delete, UserId, ImageId}, _From, #state{riak=Riak}=State) ->
     Result = delete(Riak, UserId, ImageId),
     {reply, Result, State};
 
-handle_call({save, UserId, ImageId, Image}, _From, #state{riak=Riak}=State) ->
-    NotNullImageId = save(Riak, UserId, ImageId, Image),
-    {reply, NotNullImageId, State};
+handle_call({save, UserId, Image}, _From, #state{riak=Riak}=State) ->
+    ImageId = save(Riak, UserId, Image),
+    {reply, ImageId, State};
 
 handle_call({search, UserId, Tag}, _From, #state{riak=Riak}=State) ->
     Images = search(Riak, UserId, Tag),
@@ -76,11 +94,11 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 
--spec get(pid(), id(), id()) -> image() | notfound.
+-spec get(Riak :: pid(), UserId :: id(), ImageId :: id()) -> image() | notfound.
 get(Riak, UserId, ImageId) ->
     case riakc_pb_socket:get(Riak, ?IMAGES_BUCKET(UserId), ImageId) of
         {error, notfound} -> notfound;
-        {ok, Obj} -> riakc_obj:get_value(Obj)
+        {ok, Obj} -> {ok, riakc_obj:get_value(Obj)}
     end.
 
 -spec delete(pid(), id(), id()) -> ok | notfound.
@@ -90,15 +108,11 @@ delete(Riak, UserId, ImageId) ->
         ok -> ok
     end.
 
--spec save(pid(), id(), id(), image()) -> id().
-save(Riak, UserId, ImageId, Image) ->
+-spec save(pid(), id(), image()) -> id().
+save(Riak, UserId, Image) ->
     {Props} = jiffy:decode(Image),
 
-    NotNullImageId = case ImageId of
-                         undefined -> image_id(Props);
-                         V -> V
-                     end,
-
+    ImageId = image_id(Props),
     {_, URL} = lists:keyfind(<<"url">>, 1, Props),
 
     Tags = case lists:keyfind(<<"tags">>, 1, Props) of
@@ -106,10 +120,10 @@ save(Riak, UserId, ImageId, Image) ->
                {_, T} -> T
            end,
 
-    save_thumb(NotNullImageId, URL),
-    save_image(Riak, UserId, NotNullImageId, Props),
+    save_thumb(ImageId, URL),
+    save_image(Riak, UserId, ImageId, Props),
     add_tags(Riak, UserId, Tags),
-    NotNullImageId.
+    ImageId.
 
 -spec search(pid(), id(), tag()) -> [id()].
 search(Riak, UserId, Tag) ->
@@ -121,42 +135,40 @@ search(Riak, UserId, Tag) ->
     Docs = Results#search_results.docs,
 
     ImageIds = lists:foldr(
-        fun({_Index, Doc}, Acc) ->
-            {_, ImageId} = lists:keyfind(<<"_yz_rk">>, 1, Doc),
-            [ImageId | Acc]
-        end, [], Docs
-    ),
+                 fun({_Index, Doc}, Acc) ->
+                         {_, ImageId} = lists:keyfind(<<"_yz_rk">>, 1, Doc),
+                         [ImageId | Acc]
+                 end, [], Docs
+                ),
     ImageIds.
 
 -spec save_image(pid(), id(), id(), image_props()) -> any().
 save_image(Riak, UserId, ImageId, Props) ->
     FilteredProps = lists:foldl(
-        fun(Key, NewList) ->
-            case lists:keyfind(Key, 1, Props) of
-                false -> NewList;
-                {_, Value} -> [{Key, Value} | NewList]
-            end
-        end,
-        [{<<"uid">>, ImageId}],
-        ?ALLOWED_IMAGES_PROPS
-    ),
+                      fun(Key, NewList) ->
+                              case lists:keyfind(Key, 1, Props) of
+                                  false -> NewList;
+                                  {_, Value} -> [{Key, Value} | NewList]
+                              end
+                      end,
+                      [{<<"uid">>, ImageId}],
+                      ?ALLOWED_IMAGES_PROPS
+                     ),
 
     Obj = riakc_obj:new(?IMAGES_BUCKET(UserId), ImageId, jiffy:encode({FilteredProps}), <<"application/json">>),
     ok = riakc_pb_socket:put(Riak, Obj).
 
 -spec save_thumb(id(), binary()) -> any().
 save_thumb(ImageId, URL) ->
-    poolboy:transaction(thumb_pool, fun(Worker) ->
-        gen_server:cast(Worker, {save, ImageId, URL})
-    end).
+    pihto_thumbs:save_async(ImageId, URL).
 
 -spec add_tags(pid(), id(), [image_tag()]) -> any().
 add_tags(Riak, UserId, Tags) ->
     riakc_pb_socket:modify_type(Riak, fun(Set) ->
-        lists:foldl(fun(Tag, FSet) ->
-                        riakc_set:add_element(Tag, FSet)
-                    end, Set, Tags)
-    end, ?TAGS_BUCKET, UserId, [create]).
+                                              lists:foldl(fun(Tag, FSet) ->
+                                                                  riakc_set:add_element(Tag, FSet)
+                                                          end, Set, Tags)
+                                      end, ?TAGS_BUCKET, UserId, [create]).
 
 -spec image_id(image_props()) -> binary().
 image_id(ImageProps) ->

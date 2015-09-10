@@ -1,0 +1,35 @@
+{application, pihto,
+ [
+  {description, ""},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib,
+                  cowboy,
+                  riakc
+                 ]},
+  {mod, { pihto_app, []}},
+  {env, [
+         {pools, [
+                  {pihto_images_pool, pihto_images,
+                   [
+                    {size, 10},
+                    {max_overflow, 20}
+                   ],
+                   [
+                    {riak_host, "127.0.0.1"},
+                    {riak_port, 8087}
+                   ]},
+                  {pihto_thumbs_pool, pihto_thumbs,
+                   [
+                    {size, 10},
+                    {max_overflow, 20}
+                   ], [
+                       {riak_host, "127.0.0.1"},
+                       {riak_port, 8087}
+                      ]
+                  }]
+         }
+        ]}
+ ]}.

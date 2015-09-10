@@ -1,4 +1,4 @@
--module(utils).
+-module(pihto_utils).
 
 -export([get_all_image_ids/1, regenerate_thumbs/2, resave_images/1]).
 
@@ -19,7 +19,7 @@ regenerate_thumbs(Type, ImageIds) ->
       {_, undefined} -> io:format("Undefined url ~s~n", [ImageId]);
       {_, _} ->
         io:format("Saving Id:~s URL:~s~n", [ImageId, URL]),
-        thumbs:save_sync(Type, ImageId, URL)
+        pihto_thumbs:save_sync(Type, ImageId, URL)
     end
   end,
 

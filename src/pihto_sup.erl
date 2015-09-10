@@ -1,4 +1,4 @@
--module(webserver_sup).
+-module(pihto_sup).
 
 -behaviour(supervisor).
 
@@ -23,12 +23,11 @@ start_link() ->
 %% ===================================================================
 
 init([]) ->
-    {ok, Pools} = application:get_env(webserver, pools),
+    {ok, Pools} = application:get_env(pihto, pools),
     PoolSpecs = lists:map(fun({PoolName, WorkerName, SizeArgs, WorkerArgs}) ->
         PoolArgs = [{name, {local, PoolName}},
                     {worker_module, WorkerName}] ++ SizeArgs,
         poolboy:child_spec(PoolName, PoolArgs, WorkerArgs)
                           end, Pools),
 
-    {ok, { {one_for_one, 10, 10}, [?CHILD(thumbs, worker)] ++ PoolSpecs} }.
-
+    {ok, { {one_for_one, 10, 10}, PoolSpecs} }.

@@ -1,10 +1,10 @@
--module(thumb_worker).
+-module(pihto_thumbs).
 
 -behaviour(gen_server).
 -behaviour(poolboy_worker).
 
 %% API
--export([start_link/1]).
+-export([start_link/1, save_async/2, save_sync/2, get/1]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -25,6 +25,21 @@
 
 start_link(Args) ->
     gen_server:start_link(?MODULE, Args, []).
+
+get(ImageId) ->
+    poolboy:transaction(pihto_thumbs_pool, fun(Worker) ->
+                                                   gen_server:call(Worker, {get, ImageId})
+                                           end).
+
+save_async(ImageId, URL) ->
+    poolboy:transaction(pihto_thumbs_pool, fun(Worker) ->
+                                                   gen_server:cast(Worker, {save, ImageId, URL})
+                                           end).
+
+save_sync(ImageId, URL) ->
+    poolboy:transaction(pihto_thumbs_pool, fun(Worker) ->
+                                                   gen_server:call(Worker, {save, ImageId, URL})
+                                           end).
 
 %%%===================================================================
 %%% gen_server callbacks

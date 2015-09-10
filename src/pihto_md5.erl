@@ -1,4 +1,4 @@
--module(md5).
+-module(pihto_md5).
 -export([md5_hex/1]).
 
 md5_hex(S) ->
