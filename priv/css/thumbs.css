@@ -45,7 +45,7 @@ body > .container-fluid {
   position: absolute;
   top: 4px; left: 4px;
   padding-left: 5px;
-  padding-right: 5px;
+  padding-right: 2px;
   z-index: 1;
 }
 
@@ -56,6 +56,7 @@ body > .container-fluid {
   text-decoration: none;
   cursor: pointer;
   z-index: 4;
+  padding-right: 4px;
   position: relative;
 }
 
@@ -79,8 +80,15 @@ body > .container-fluid {
   margin-right: -5px;
 }
 
+.slideshow {
+  position: fixed;
+  z-index: 30;
+  top: 20px; left: 20px;
+  display: none;
+}
+
 #slideshow-window .modal-dialog {
-  width: unset;
+  /*width: unset;*/
 }
 
 #slideshow-window .modal-footer {
@@ -88,9 +96,6 @@ body > .container-fluid {
 }
 
 #slideshow-image {
-  max-width: 100%;
-  display: block;
   margin-left: auto;
   margin-right: auto;
 }
-
